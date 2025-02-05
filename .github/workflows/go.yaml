@@ -19,12 +19,11 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
-    # 使用 matrix 来支持多个操作系统和架构
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]  # 支持多个操作系统
         go-version: ['1.22.7']  # 你可以根据需要修改 Go 版本
-        # 可以在这里指定不同的架构 (amd64, arm64 等)，如果需要支持更多架构的话
+        # 你还可以在这里指定不同的架构 (amd64, arm64 等)，如果需要支持更多架构的话
 
     steps:
       - name: Checkout code
@@ -43,7 +42,7 @@ jobs:
           GOOS: ${{ matrix.os }}
           GOARCH: amd64  # 你可以根据需求修改架构，支持 arm64 等
 
-      - name: Archive production artifacts
+      - name: Archive production artifact
         uses: actions/upload-artifact@v4
         with:
           name: web-${{ matrix.os }}
