@@ -30,7 +30,6 @@ jobs:
       - name: Build
         run: go build -o web ./...
 
-
       - name: Archive production artifact
         uses: actions/upload-artifact@v4
         with:
