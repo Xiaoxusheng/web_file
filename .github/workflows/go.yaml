@@ -3,7 +3,7 @@ name: Go CI/CD Release
 on:
   push:
     tags:
-      - 'v*.*.*' # 只有当推送符合此模式的标签时触发工作流
+      - 'v*.*.*'  # 只在标签符合这个模式时触发
     branches:
       - master
 
@@ -14,7 +14,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.ACCESS_TOKEN }}  # 使用 PAT 令牌
+          token: ${{ secrets.ACCESS_TOKEN }}  # 使用 PAT token
+
   build-and-deploy:
     runs-on: ubuntu-latest
 
@@ -25,39 +26,43 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.22.7' # 根据需要替换为你想要的 Go 版本
+          go-version: '1.22.7'  # 根据需要修改 Go 版本
 
-      - name: Build
-        run: go build -o web -ldflags "-w -s" ./...
+      - name: Build for multiple platforms
+        run: |
+          platforms="linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64"
+          version=${GITHUB_REF#refs/tags/}  # 提取版本号
+          for platform in $platforms; do
+            os_arch=$(echo $platform | tr / ' ' )
+            GOOS=$(echo $os_arch | cut -d ' ' -f1)
+            GOARCH=$(echo $os_arch | cut -d ' ' -f2)
+            output_name="${GOOS}-${GOARCH}-web-${version}"  # 包名包含平台和版本号
+            go build -o "${output_name}" -ldflags "-w -s" ./...
+          done
 
       - name: Archive production artifact
         uses: actions/upload-artifact@v4
         with:
           name: web
-          path: web
-
-      - name: Download artifact for deployment
-        uses: actions/download-artifact@v4
-        with:
-          name: web
+          path: *.tar.gz  # 如果有压缩包，可以修改路径匹配规则
 
       - name: Create GitHub Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: actions/create-release@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
-          release_name: web ${{ github.ref }}
+          release_name: "web ${GITHUB_REF#refs/tags/}"
           draft: false
           prerelease: false
 
-      - name: Upload Release Asset
+      - name: Upload Release Assets
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./web
-          asset_name: web-${{ github.ref }}
+          asset_path: ./web-*
+          asset_name: web-${{ github.ref }}-${{ runner.os }}-${{ github.sha }}
           asset_content_type: application/octet-stream
