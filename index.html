@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件上传</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        .container {
+            width: 50%;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h2 {
+            color: #333;
+        }
+        .upload-btn {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .upload-btn:hover {
+            background-color: #45a049;
+        }
+        #file-input {
+            display: none;
+        }
+        #file-label {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #file-label:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>文件上传</h2>
+    <form action="https://xlei.love:8081/upload" method="post" enctype="multipart/form-data" name="file">
+        <input type="file" id="file-input" name="file" multiple accept=".jpg,.mp4" onchange="updateFileLabel()">
+        <label for="file-input" id="file-label" class="upload-btn">选择文件</label>
+        <p id="file-size-info">文件大小不能超过20MB</p>
+        <button type="submit" class="upload-btn">上传</button>
+    </form>
+</div>
+
+<script>
+    function updateFileLabel() {
+        const fileInput = document.getElementById('file-input');
+        const fileSizeInfo = document.getElementById('file-size-info');
+        const files = fileInput.files;
+        let totalSize = 0;
+        for (let i = 0; i < files.length; i++) {
+            totalSize += files[i].size;
+        }
+        const totalSizeMB = totalSize / (1024 * 1024);
+        fileSizeInfo.textContent = `已选文件大小: ${totalSizeMB.toFixed(2)} MB`;
+        if (totalSizeMB > 20) {
+            fileSizeInfo.style.color = 'red';
+        } else {
+            fileSizeInfo.style.color = 'black';
+        }
+    }
+</script>
+</body>
+</html>
