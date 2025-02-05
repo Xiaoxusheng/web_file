@@ -39,14 +39,15 @@ jobs:
             output_name="${GOOS}-${GOARCH}-web-${version}"  # 包名包含平台和版本号
             go build -o "${output_name}" -ldflags "-w -s" ./...
           done
-          # 查看生成的文件
-          echo "Listing generated files..."
-          ls -l
+            # 列出生成的文件，帮助调试
+         echo "Listing generated files..."
+         ls -l
 
       - name: Archive production artifact
         uses: actions/upload-artifact@v4
         with:
           name: web
+          path: '**/web-*'  # 修改为匹配所有生成的文件
 
       - name: Create GitHub Release
         id: create_release
@@ -65,6 +66,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./web-*
+          asset_path: '**/web-*'
           asset_name: web-${{ github.ref }}-${{ runner.os }}-${{ github.sha }}
           asset_content_type: application/octet-stream
