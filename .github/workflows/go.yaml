@@ -47,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: web
-          path: ./web-*  # 修改为匹配所有生成的文件
+          path: "./web-*"  # 修改为匹配所有生成的文件
 
       - name: Create GitHub Release
         id: create_release
