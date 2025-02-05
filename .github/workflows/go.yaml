@@ -3,7 +3,7 @@ name: Go CI/CD Release
 on:
   push:
     tags:
-      - 'v*.*.*'  # 只在标签符合这个模式时触发
+      - 'v*.*.*'
     branches:
       - master
 
@@ -14,7 +14,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.ACCESS_TOKEN }}  # 使用 PAT token
+          token: ${{ secrets.ACCESS_TOKEN }}
 
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -26,32 +26,35 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.22.7'  # 根据需要修改 Go 版本
+          go-version: '1.22.7'
 
       - name: Build for multiple platforms
         run: |
           platforms="linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64"
-          version=${GITHUB_REF#refs/tags/}  # 提取版本号
+          version=${GITHUB_REF#refs/tags/}
           for platform in $platforms; do
             os_arch=$(echo $platform | tr / ' ' )
             GOOS=$(echo $os_arch | cut -d ' ' -f1)
             GOARCH=$(echo $os_arch | cut -d ' ' -f2)
-            output_name="${GOOS}-${GOARCH}-web-${version}"  # 包名包含平台和版本号
+            output_name="${GOOS}-${GOARCH}-web-${version}"
+            echo "Building for ${GOOS}-${GOARCH}..."
             go build -o "${output_name}" -ldflags "-w -s" ./...
           done
-            # 列出生成的文件，帮助调试
-          echo "Listing generated files..."
-          ls -l
+
+      - name: List all files before uploading
+        run: |
+          echo "Listing all files in the current directory:"
+          ls -R
 
       - name: Archive production artifact
         uses: actions/upload-artifact@v4
         with:
           name: web
-          path: '**/web-*'  # 修改为匹配所有生成的文件
+          path: ./web-*  # 确保匹配当前目录中的文件
 
       - name: Create GitHub Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: actions/create-release@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -60,12 +63,16 @@ jobs:
           draft: false
           prerelease: false
 
+      - name: Debug create-release step
+        run: |
+          echo "Release URL: ${{ steps.create_release.outputs.upload_url }}"
+
       - name: Upload Release Assets
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: '**/web-*'
+          asset_path: ./web-*  # 直接匹配当前目录的文件
           asset_name: web-${{ github.ref }}-${{ runner.os }}-${{ github.sha }}
           asset_content_type: application/octet-stream
