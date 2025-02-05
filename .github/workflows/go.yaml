@@ -8,6 +8,13 @@ on:
       - master
 
 jobs:
+  example:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.ACCESS_TOKEN }}  # 使用 PAT 令牌
   build-and-deploy:
     runs-on: ubuntu-latest
 
