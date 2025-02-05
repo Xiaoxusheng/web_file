@@ -4,7 +4,7 @@ on:
   push:
     tags:
       - 'v*.*.*' # 只有当推送符合此模式的标签时触发工作流
-    branch :
+    branches:
       - master
 
 jobs:
