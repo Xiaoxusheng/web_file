@@ -21,27 +21,19 @@ jobs:
           go-version: '1.22.7' # 根据需要替换为你想要的 Go 版本
 
       - name: Build
-        run: go build -o myapp ./...
+        run: go build -o web ./...
 
       - name: Archive production artifact
         uses: actions/upload-artifact@v4
         with:
-          name: myapp
-          path: myapp
+          name: web
+          path: web
 
       - name: Download artifact for deployment
         uses: actions/download-artifact@v4
         with:
-          name: myapp
+          name: web
 
-      - name: Deploy to server via SSH
-        uses: appleboy/scp-action@v0.1.0
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          source: "myapp"
-          target: "/root/file/"
 
       - name: Create GitHub Release
         id: create_release
