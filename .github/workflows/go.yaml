@@ -1,4 +1,4 @@
-name: Go CI/CD Release
+name: Go Build and Release
 
 on:
   push:
@@ -8,20 +8,17 @@ on:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Extract Version
-        run: |
-          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV  # 移除了v前缀
-
-      - name: Setup Go
+      - name: Set up Go 1.22.7
         uses: actions/setup-go@v2
         with:
           go-version: '1.22.7'
 
-      - name: Cache Dependencies
+      - name: Cache Go modules
         uses: actions/cache@v2
         with:
           path: ~/go/pkg/mod
@@ -29,27 +26,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: Build Multi-Platform Binaries
+      - name: Build for Linux
         run: |
-          platforms=(
-            "linux/amd64"
-            "linux/arm64"
-            "darwin/amd64"
-            "darwin/arm64" 
-            "windows/amd64"
-          )
+          mkdir -p build/linux
+          GOOS=linux GOARCH=amd64 go build -o build/linux/myapp -ldflags "-w -s" ./...
 
-          for platform in "${platforms[@]}"; do
-            GOOS=${platform%/*}
-            GOARCH=${platform#*/}
-            OUTPUT="web-${GOOS}-${GOARCH}-v${VERSION}"  # 添加v前缀
-          
-            if [ "$GOOS" = "windows" ]; then
-              OUTPUT+=".exe"
-            fi
-
-            GOOS=$GOOS GOARCH=$GOARCH go build -o "$OUTPUT" -ldflags "-w -s" ./...
-          done
+      - name: Create tar.gz archive
+        run: |
+          cd build/linux
+          tar -czf myapp-linux-amd64-${{ github.ref_name }}.tar.gz myapp
 
       - name: Create Release
         id: create-release
@@ -58,15 +43,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
-          release_name: "Web v${{ env.VERSION }}"
+          release_name: "Release v${{ github.ref_name }}"
           draft: false
           prerelease: false
 
-      - name: Upload Release Assets
+      - name: Upload Release Asset
         uses: actions/upload-release-asset@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./web-*
-          asset_name: ${{ github.ref_name }}/${{ github.run_id }}/$(find ./ -name "web-*" -exec basename {} \;)  # 使用find来确保文件名正确
+          asset_path: ./build/linux/myapp-linux-amd64-${{ github.ref_name }}.tar.gz
+          asset_name: myapp-linux-amd64-${{ github.ref_name }}.tar.gz
