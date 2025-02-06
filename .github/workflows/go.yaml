@@ -29,12 +29,12 @@ jobs:
       - name: Build for Linux
         run: |
           mkdir -p build/linux
-          GOOS=linux GOARCH=amd64 go build -o build/linux/myapp -ldflags "-w -s" ./...
+          GOOS=linux GOARCH=amd64 go build -o build/linux/web -ldflags "-w -s" ./...
 
       - name: Create tar.gz archive
         run: |
           cd build/linux
-          tar -czf myapp-linux-amd64-${{ github.ref_name }}.tar.gz myapp
+          tar -czf web-linux-amd64-${{ github.ref_name }}.tar.gz myapp
 
       - name: Create Release
         id: create-release
