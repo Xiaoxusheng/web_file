@@ -14,7 +14,7 @@ jobs:
 
       - name: Extract Version
         run: |
-          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV  # 移除了v前缀
 
       - name: Setup Go
         uses: actions/setup-go@v2
@@ -42,7 +42,7 @@ jobs:
           for platform in "${platforms[@]}"; do
             GOOS=${platform%/*}
             GOARCH=${platform#*/}
-            OUTPUT="web-${GOOS}-${GOARCH}-${VERSION}"
+            OUTPUT="web-${GOOS}-${GOARCH}-v${VERSION}"  # 添加v前缀
           
             if [ "$GOOS" = "windows" ]; then
               OUTPUT+=".exe"
@@ -58,7 +58,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
-          release_name: "Web ${{ env.VERSION }}"
+          release_name: "Web v${{ env.VERSION }}"
           draft: false
           prerelease: false
 
@@ -69,4 +69,4 @@ jobs:
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
           asset_path: ./web-*
-          asset_name: ${{ basename(asset_path) }}
+          asset_name: ${{ github.ref_name }}/${{ github.run_id }}/$(basename ${{ asset_path }})  # 修正后的命名方式
