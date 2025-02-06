@@ -29,18 +29,18 @@ jobs:
       - name: Build for Linux
         run: |
           mkdir -p build/linux
-          GOOS=linux GOARCH=amd64 go build -o build/linux/web -ldflags "-w -s" ./...
+          GOOS=linux GOARCH=amd64 go build -o build/linux/myapp -ldflags "-w -s" ./...
 
       - name: Create tar.gz archive
         run: |
           cd build/linux
-          tar -czf web-linux-amd64-${{ github.ref_name }}.tar.gz web
+          tar -czf myapp-linux-amd64-${{ github.ref_name }}.tar.gz myapp
 
       - name: Create Release
         id: create-release
-        uses: actions/create-release@latest
+        uses: actions/create-release@v4
         env:
-          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
           release_name: "Release v${{ github.ref_name }}"
@@ -48,11 +48,10 @@ jobs:
           prerelease: false
 
       - name: Upload Release Asset
-        uses: actions/upload-release-asset@latest
+        uses: actions/upload-release-asset@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./web.tar.gz
-          asset_name: file.tar.gz
-          asset_content_type: application/x-gzip
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: ./build/linux/myapp-linux-amd64-${{ github.ref_name }}.tar.gz
+          asset_name: myapp-linux-amd64-${{ github.ref_name }}.tar.gz
