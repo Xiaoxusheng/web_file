@@ -23,14 +23,29 @@ var ipAccessMap = make(map[string]struct {
 	lastAccessTime time.Time
 })
 
-var mutex sync.Mutex
+// UploadHistory 文件上传历史
+type UploadHistory struct {
+	Name string    `json:"name"`
+	Size int64     `json:"size"`
+	Time time.Time `json:"time"`
+}
 
-var channels = make(chan struct{})
-var successChan = make(chan struct{})
-var paths = "/root/file"
+var (
+	mutex       sync.Mutex
+	channels    = make(chan struct{})
+	successChan = make(chan struct{})
+	paths       = ""
+	// 限制文件大小为20MB
+	filesize int64 = 20 << 20
 
-// 2000MB
-var filesize int64 = 2000 << 20
+	fileLocks = make(map[string]*sync.Mutex)
+	//文件锁
+	fileLockMux sync.Mutex
+	//存放上传历史记录
+	history      []UploadHistory
+	historyMutex sync.Mutex
+	addr         = ":80"
+)
 
 func save(m *multipart.FileHeader) {
 	//获取后缀
@@ -96,15 +111,15 @@ func save(m *multipart.FileHeader) {
 
 func BasicAuth(h http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		file, err := os.Open("/root/file/ip.txt")
-		if err != nil {
+		file, err := os.Open(path.Join(paths, "ip.txt"))
+		if err != nil && err != io.EOF {
 			log.Println("打开文件失败！")
 			return
 		}
 		defer func(file *os.File) {
 			err := file.Close()
 			if err != nil {
-
+				log.Println("err:", err)
 			}
 		}(file)
 		//这里获取的是ip地址将端口去掉
@@ -159,20 +174,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, path.Join(paths, "upload_load.html"))
 }
 
-type UploadHistory struct {
-	Name string    `json:"name"`
-	Size int64     `json:"size"`
-	Time time.Time `json:"time"`
-}
-
-var (
-	history      []UploadHistory
-	historyMutex sync.Mutex
-)
-
-var fileLocks = make(map[string]*sync.Mutex)
-var fileLockMux sync.Mutex
-
+// 获取文件锁
 func getFileLock(filename string) *sync.Mutex {
 	fileLockMux.Lock()
 	defer fileLockMux.Unlock()
@@ -187,6 +189,7 @@ func getFileLock(filename string) *sync.Mutex {
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	filename := r.FormValue("filename")
+	//这里加锁是为了防止并发同时创建文件夹
 	lock := getFileLock(filename)
 	lock.Lock()
 	defer lock.Unlock()
@@ -567,8 +570,8 @@ func main() {
 	http.HandleFunc("/", indexHandler)
 
 	log.Println("web server is star")
-	//err := http.ListenAndServe(":80", nil)
-	err := http.ListenAndServeTLS(":8081", "/root/ssl/xlei.fun.pem", "/root/ssl/xlei.fun.key", nil)
+	err := http.ListenAndServe(addr, nil)
+	//err := http.ListenAndServeTLS(addr, "/root/ssl/xlei.fun.pem", "/root/ssl/xlei.fun.key", nil)
 	if err != nil {
 		log.Println(err)
 	}
