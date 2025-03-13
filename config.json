@@ -1,0 +1,10 @@
+{
+  "username": "root",
+  "password": "admin123",
+  "url": "127.0.0.1",
+  "port": "3306",
+  "database": "file",
+  "maxIdleConns": 100,
+  "maxOpenCons": 100,
+  "connMaxLifetime": 10
+}
