@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Xiaoxusheng/web_file/utils"
 	"io"
 	"log"
 	"mime/multipart"
@@ -376,6 +377,7 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	fmt.Println("id", os.Getpid())
+	utils.InitMysql()
 	defer func() {
 		err := recover()
 		if err != nil {
